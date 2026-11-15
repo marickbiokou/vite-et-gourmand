@@ -1,0 +1,7 @@
+
+# Configuration locale
+/config/database.php
+
+# Sauvegardes SQL locales
+/database/*.sql
+/ECF DATABASE COPIE/*.sql

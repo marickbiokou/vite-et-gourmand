@@ -1,11 +1,273 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 40px;
-  background-color: #f8f5f0;
-  color: #333333;
+:root {
+  --bordeaux: #7b3028;
+  --creme: #f7f1e7;
+  --texte: #292521;
+  --dore: #d7b483;
 }
 
-h1 {
-  color: #8b3a2b;
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--creme);
+  color: var(--texte);
+  font-family: Arial, sans-serif;
+}
+
+h1,
+h2 {
+  color: var(--bordeaux);
+}
+
+.conteneur {
+  width: 90%;
+  max-width: 1200px;
+  margin: 40px auto;
+}
+
+.grille-menus {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 24px;
+}
+
+.carte-menu {
+  background-color: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.prix {
+  color: var(--bordeaux);
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.bouton-detail {
+  display: inline-block;
+  padding: 12px 20px;
+  background-color: var(--bordeaux);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+
+.bouton-detail:hover {
+  background-color: #5e241e;
+}
+
+.plat-menu {
+  background-color: white;
+  padding: 20px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.plat-menu h3 {
+  color: var(--bordeaux);
+  margin-top: 0;
+}
+
+.image-menu {
+  display: block;
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.galerie-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.galerie-menu img {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.filtres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+  background-color: white;
+  border-radius: 12px;
+}
+
+.filtres h2 {
+  width: 100%;
+  margin: 0 0 8px;
+}
+
+.filtres label {
+  font-weight: bold;
+}
+
+.filtres input,
+.filtres select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  max-width: 160px;
+}
+
+.carte-menu[hidden] {
+  display: none;
+}
+
+.formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 500px;
+  padding: 24px;
+  background-color: white;
+  border-radius: 12px;
+}
+
+.formulaire label {
+  font-weight: bold;
+}
+
+.formulaire input {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.formulaire button {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  align-self: flex-start;
+}
+
+.aide-formulaire {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.message-erreur {
+  color: #a40000;
+  font-weight: bold;
+}
+
+.message-succes {
+  color: #176b35;
+  font-weight: bold;
+}
+
+.barre-utilisateur {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.barre-utilisateur p {
+  margin: 0;
+}
+
+.commande-menu {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: white;
+  border-radius: 12px;
+}
+
+.recapitulatif {
+  padding: 20px;
+  background-color: var(--creme);
+  border-radius: 8px;
+}
+
+.recapitulatif h2 {
+  margin-top: 0;
+}
+
+.recapitulatif small {
+  color: #555;
+}
+
+.lien-retour {
+  display: inline-block;
+  margin-bottom: 20px;
+  color: var(--bordeaux);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.lien-retour:hover {
+  text-decoration: underline;
+}
+
+/* Navigation principale */
+
+.navigation-principale {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.navigation-principale a {
+  color: #802c23;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.navigation-principale a:hover {
+  text-decoration: underline;
+}
+
+/* Section d'accueil */
+
+.accueil-hero {
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.accueil-hero h1 {
+  font-size: 42px;
+  margin-bottom: 20px;
+}
+
+.accueil-hero p {
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: 650px;
+  margin: 0 auto 30px;
+}
+
+@media (max-width: 600px) {
+  .accueil-hero {
+    padding: 50px 15px;
+  }
+
+  .accueil-hero h1 {
+    font-size: 30px;
+  }
+
+  .accueil-hero p {
+    font-size: 16px;
+  }
 }
