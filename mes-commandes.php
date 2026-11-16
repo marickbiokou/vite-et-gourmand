@@ -1,6 +1,12 @@
 
 <?php
+
 session_start();
+
+// Créer un jeton CSRF pour sécuriser les actions du client
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 require_once __DIR__ . '/config/database.php';
 
@@ -66,6 +72,16 @@ $libellesStatuts = [
 
     <h1>Mes commandes</h1>
 
+    <?php if (($_GET['annulation'] ?? '') === 'ok'): ?>
+        <p>Votre commande a bien été annulée.</p>
+    <?php elseif (($_GET['annulation'] ?? '') === 'erreur'): ?>
+        <p class="message-erreur">Annulation impossible.</p>
+    <?php endif; ?>
+
+    <?php if (($_GET['modification'] ?? '') === 'ok'): ?>
+        <p>Votre commande a bien été modifiée.</p>
+    <?php endif; ?>
+
     <?php if (empty($commandes)): ?>
         <p>Vous n'avez pas encore passé de commande.</p>
         <a href="menus.php">Découvrir nos menus</a>
@@ -102,6 +118,33 @@ $libellesStatuts = [
                     <strong>Statut :</strong>
                     <?= htmlspecialchars($libellesStatuts[$commande['statut']] ?? $commande['statut']) ?>
                 </p>
+
+                <?php if ($commande['statut'] === 'en_attente'): ?>
+                    <p>
+                        <a href="modifier-commande.php?id=<?= (int) $commande['id'] ?>">
+                            Modifier ma commande
+                        </a>
+                    </p>
+                <?php endif; ?>
+
+                    <form action="annuler-commande.php" method="POST">
+                        <input
+                            type="hidden"
+                            name="commande_id"
+                            value="<?= (int) $commande['id'] ?>"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>"
+                        >
+
+                        <button type="submit">
+                            Annuler ma commande
+                        </button>
+                    </form>
+                
             </article>
         <?php endforeach; ?>
 
