@@ -47,7 +47,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['prenom'] = $utilisateur['prenom'];
             $_SESSION['role'] = $utilisateur['role'];
 
-            header('Location: menus.php');
+            // Rediriger l'utilisateur selon son rôle
+            if ($utilisateur['role'] === 'employe') {
+                header('Location: espace-employe.php');
+            } elseif ($utilisateur['role'] === 'admin') {
+                header('Location: espace-admin.php');
+            } else {
+                header('Location: menus.php');
+            }
+
             exit;
         }
     }

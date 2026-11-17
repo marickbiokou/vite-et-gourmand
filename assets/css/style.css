@@ -271,3 +271,187 @@ h2 {
     font-size: 16px;
   }
 }
+
+/* ========================================
+   GESTION DES COMMANDES
+======================================== */
+
+/* Tableau des commandes */
+
+.table-commandes {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 24px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.table-commandes th {
+  background-color: var(--bordeaux);
+  color: white;
+  padding: 16px 12px;
+  text-align: left;
+}
+
+.table-commandes td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e7e0d6;
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+.table-commandes tbody tr:nth-child(even) {
+  background-color: #faf7f2;
+}
+
+.table-commandes tbody tr:hover {
+  background-color: #f0e6d7;
+}
+
+.table-commandes form {
+  margin-bottom: 8px;
+}
+
+/* Filtres des commandes */
+
+.filtres-commandes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  background-color: white;
+  padding: 20px;
+  margin: 24px 0;
+  border-radius: 12px;
+}
+
+.filtres-commandes label {
+  font-weight: bold;
+}
+
+.filtres-commandes input,
+.filtres-commandes select,
+.formulaire select,
+.formulaire textarea {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font: inherit;
+  max-width: 100%;
+}
+
+.formulaire textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Boutons de gestion */
+
+.table-commandes button,
+.filtres-commandes button,
+.carte-menu form button,
+.formulaire button {
+  background-color: var(--bordeaux);
+  color: white;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.table-commandes button:hover,
+.filtres-commandes button:hover,
+.carte-menu form button:hover,
+.formulaire button:hover {
+  background-color: #5e241e;
+}
+
+/* Liens des commandes */
+
+.table-commandes a,
+.filtres-commandes a,
+.carte-menu a:not(.bouton-detail) {
+  color: var(--bordeaux);
+  font-weight: bold;
+}
+
+.table-commandes a {
+  display: inline-block;
+  margin: 4px;
+}
+
+.carte-menu + .carte-menu {
+  margin-top: 20px;
+}
+
+/* Statuts des commandes */
+
+.statut {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.statut-en_attente {
+  background-color: #fff0cc;
+  color: #795500;
+}
+
+.statut-acceptee {
+  background-color: #dceedd;
+  color: #246438;
+}
+
+.statut-en_preparation {
+  background-color: #fce4cc;
+  color: #8b4513;
+}
+
+.statut-en_livraison {
+  background-color: #dce9fa;
+  color: #234d85;
+}
+
+.statut-livree,
+.statut-terminee {
+  background-color: #dceedd;
+  color: #246438;
+}
+
+.statut-en_attente_retour_materiel {
+  background-color: #ece0f5;
+  color: #69418b;
+}
+
+.statut-annulee {
+  background-color: #f7dddd;
+  color: #a40000;
+}
+
+/* Affichage responsive */
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .filtres-commandes {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-commandes th,
+  .table-commandes td {
+    padding: 10px;
+  }
+
+  .table-responsive .table-commandes {
+    min-width: 650px;
+  }
+}

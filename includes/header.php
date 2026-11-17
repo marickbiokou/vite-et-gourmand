@@ -2,9 +2,9 @@
 <?php
 // La session doit être démarrée par la page principale.
 
-$estConnecte = isset($_SESSION['utilisateur_id']);
-$estClient = $estConnecte
-    && ($_SESSION['role'] ?? '') === 'client';
+    $estConnecte = isset($_SESSION['utilisateur_id']);
+    $estClient = $estConnecte && ($_SESSION['role'] ?? '') === 'client';
+    $estEmploye = $estConnecte && ($_SESSION['role'] ?? '') === 'employe';
 ?>
 
 <header>
@@ -14,6 +14,10 @@ $estClient = $estConnecte
 
         <?php if ($estClient): ?>
             <a href="mes-commandes.php">Mes commandes</a>
+        <?php endif; ?>
+
+        <?php if ($estEmploye): ?>
+            <a href="espace-employe.php">Espace employé</a>
         <?php endif; ?>
 
         <?php if ($estConnecte): ?>
