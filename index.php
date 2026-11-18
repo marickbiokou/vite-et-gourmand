@@ -1,5 +1,3 @@
-
-
 <?php
 session_start();
 
@@ -11,7 +9,6 @@ $estClient = $estConnecte
     && ($_SESSION['role'] ?? '') === 'client';
 ?>
 
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -20,17 +17,15 @@ $estClient = $estConnecte
     <title><?= htmlspecialchars($nomEntreprise) ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body>
-    
-<body>
 
+<body>
 
     <?php require_once __DIR__ . '/includes/header.php'; ?>
 
-
-    
     <main class="conteneur">
+
         <section class="accueil-hero">
+
             <h1>Vite & Gourmand</h1>
 
             <p>
@@ -42,11 +37,14 @@ $estClient = $estConnecte
             <a href="menus.php" class="bouton-detail">
                 Découvrir nos menus
             </a>
+
         </section>
+<?php require_once __DIR__ . '/avis-accueil.php'; ?>
     </main>
 
-
+    <?php require_once __DIR__ . '/includes/footer.php'; ?>
 
     <script src="assets/js/main.js"></script>
+
 </body>
 </html>

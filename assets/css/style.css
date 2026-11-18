@@ -27,6 +27,10 @@ h2 {
   margin: 40px auto;
 }
 
+/* ========================================
+   MENUS
+======================================== */
+
 .grille-menus {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
@@ -38,6 +42,10 @@ h2 {
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.conteneur > .carte-menu + .carte-menu {
+  margin-top: 20px;
 }
 
 .prix {
@@ -54,6 +62,9 @@ h2 {
   text-decoration: none;
   border-radius: 6px;
   margin-top: 12px;
+  border: none;
+  cursor: pointer;
+  font: inherit;
 }
 
 .bouton-detail:hover {
@@ -95,6 +106,8 @@ h2 {
   border-radius: 8px;
 }
 
+/* Filtres des menus */
+
 .filtres {
   display: flex;
   flex-wrap: wrap;
@@ -126,6 +139,10 @@ h2 {
 .carte-menu[hidden] {
   display: none;
 }
+
+/* ========================================
+   FORMULAIRES
+======================================== */
 
 .formulaire {
   display: flex;
@@ -217,7 +234,9 @@ h2 {
   text-decoration: underline;
 }
 
-/* Navigation principale */
+/* ========================================
+   NAVIGATION PRINCIPALE
+======================================== */
 
 .navigation-principale {
   display: flex;
@@ -239,7 +258,9 @@ h2 {
   text-decoration: underline;
 }
 
-/* Section d'accueil */
+/* ========================================
+   PAGE D'ACCUEIL
+======================================== */
 
 .accueil-hero {
   padding: 80px 20px;
@@ -275,8 +296,6 @@ h2 {
 /* ========================================
    GESTION DES COMMANDES
 ======================================== */
-
-/* Tableau des commandes */
 
 .table-commandes {
   width: 100%;
@@ -371,8 +390,8 @@ h2 {
 
 /* Liens des commandes */
 
-.table-commandes a,
-.filtres-commandes a,
+.table-commandes a:not(.bouton-detail),
+.filtres-commandes a:not(.bouton-detail),
 .carte-menu a:not(.bouton-detail) {
   color: var(--bordeaux);
   font-weight: bold;
@@ -381,10 +400,6 @@ h2 {
 .table-commandes a {
   display: inline-block;
   margin: 4px;
-}
-
-.carte-menu + .carte-menu {
-  margin-top: 20px;
 }
 
 /* Statuts des commandes */
@@ -433,7 +448,54 @@ h2 {
   color: #a40000;
 }
 
-/* Affichage responsive */
+/* ========================================
+   PIED DE PAGE
+======================================== */
+
+footer.pied-page {
+  background-color: var(--bordeaux);
+  color: white;
+  padding: 30px 0 15px;
+  margin-top: 40px;
+}
+
+.pied-page .contenu-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 30px;
+  margin: 0 auto;
+}
+
+.pied-page h2 {
+  color: white;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+}
+
+.pied-page .liste-horaires {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pied-page .liste-horaires li {
+  margin-bottom: 8px;
+}
+
+.pied-page .copyright {
+  text-align: center;
+  font-size: 0.85rem;
+  margin: 30px 0 0;
+}
+
+.pied-page a {
+  color: white;
+}
+
+/* ========================================
+   AFFICHAGE RESPONSIVE
+======================================== */
 
 .table-responsive {
   width: 100%;
@@ -453,5 +515,39 @@ h2 {
 
   .table-responsive .table-commandes {
     min-width: 650px;
+  }
+
+  .pied-page .contenu-footer {
+    flex-direction: column;
+  }
+}
+
+/* Statistiques administrateur */
+
+.graphique-statistiques {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  margin: 25px 0;
+}
+
+.statistiques-ca {
+  margin-top: 25px;
+}
+
+.total-statistiques {
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--bordeaux);
+  margin: 25px 0;
+}
+
+@media (max-width: 768px) {
+  .graphique-statistiques {
+    height: 250px;
+  }
+
+  .total-statistiques {
+    font-size: 26px;
   }
 }

@@ -17,6 +17,7 @@ $distancesLivraison = [
 
 
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/envoyer-mail.php';
 
 // Vérifier que le client est connecté
 if (!isset($_SESSION['utilisateur_id'])) {
@@ -70,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Vérifier le jeton CSRF
     if (
-        !isset($_POST['csrf_token']) ||
+        !is_string($_POST['csrf_token'] ?? null) ||
         !hash_equals(
             $_SESSION['csrf_token'],
             $_POST['csrf_token']
@@ -268,8 +269,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->commit();
 
 
-                // Confirmation temporaire pour notre test
-                header('Location: commander.php?menu_id=' . $menuId . '&commande_creee=' . $commandeId);
+                // Confirmer la commande après validation de la transaction
+                $totalFormate = number_format($prixTotal, 2, ',', ' ');
+                $message = "Bonjour " . $client['prenom'] . ",\n\n"
+                    . "Votre commande n°$commandeId a été enregistrée.\n"
+                    . "Menu : " . $menu['nom'] . "\n"
+                    . "Nombre de personnes : $nombrePersonnes\n"
+                    . "Livraison : $datePrestation à $heureLivraison\n"
+                    . "Total : $totalFormate €\n"
+                    . "Statut : en attente d’acceptation.\n\n"
+                    . "L’équipe Vite & Gourmand";
+
+                envoyerMail($client['email'], 'Confirmation de commande', $message);
+
+                header('Location: detail-commande.php?id=' . $commandeId);
                 exit;
 
             } catch (Throwable $e) {

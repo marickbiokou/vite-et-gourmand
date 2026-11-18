@@ -5,3 +5,6 @@
 # Sauvegardes SQL locales
 /database/*.sql
 /ECF DATABASE COPIE/*.sql
+
+/config/mail.php
+/vendor/

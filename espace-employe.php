@@ -1,340 +1,394 @@
-
 <?php
 
-session_start();
-
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/espace-commun.php';
 
 // Vérifier les droits d'accès
-if (
-    !isset($_SESSION['utilisateur_id']) ||
-    ($_SESSION['role'] ?? '') !== 'employe'
-) {
-    http_response_code(403);
-    exit('Accès refusé.');
-}
 
-// Vérifier que le compte employé est actif
-$stmt = $pdo->prepare(
-    "SELECT id FROM utilisateurs
-     WHERE id = :id AND role = 'employe' AND actif = 1"
-);
+$u = compteActif(['employe', 'admin']);
 
-$stmt->execute([
-    'id' => $_SESSION['utilisateur_id']
-]);
+// Récupérer les libellés des statuts
 
-if (!$stmt->fetch()) {
-    http_response_code(403);
-    exit('Accès refusé.');
-}
+$labels = libelles();
 
-// Générer un jeton de sécurité CSRF
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+// Définir les transitions autorisées
 
-// Définir les changements de statut autorisés
 $transitions = [
+
     'en_attente' => ['acceptee'],
     'acceptee' => ['en_preparation'],
     'en_preparation' => ['en_livraison'],
     'en_livraison' => ['livree'],
+
     'livree' => [
         'terminee',
         'en_attente_retour_materiel'
     ],
+
     'en_attente_retour_materiel' => ['terminee']
+
 ];
 
-// Définir les libellés des statuts
-$libellesStatuts = [
-    'en_attente' => 'En attente',
-    'acceptee' => 'Acceptée',
-    'en_preparation' => 'En préparation',
-    'en_livraison' => 'En cours de livraison',
-    'livree' => 'Livrée',
-    'en_attente_retour_materiel' => 'En attente du retour du matériel',
-    'terminee' => 'Terminée',
-    'annulee' => 'Annulée'
-];
+// Récupérer et vérifier les filtres
 
-// Récupérer les statuts autorisés
-$statutsAutorises = array_keys($libellesStatuts);
+$statut = $_GET['statut'] ?? '';
 
-// Récupérer les valeurs des filtres
-$filtreStatut = $_GET['statut'] ?? '';
-$filtreClient = $_GET['client'] ?? '';
+if (!is_string($statut) || !isset($labels[$statut])) {
 
-// Vérifier les valeurs des filtres
-if (!in_array($filtreStatut, $statutsAutorises, true)) {
-    $filtreStatut = '';
+    $statut = '';
 }
 
-$filtreClient = is_string($filtreClient)
-    ? trim($filtreClient)
+$client = is_string($_GET['client'] ?? null)
+    ? trim($_GET['client'])
     : '';
 
-// Récupérer les commandes des clients
-$sql = "SELECT c.id,
-               c.nombre_personnes,
-               c.date_prestation,
-               c.heure_livraison,
-               c.prix_total,
-               c.statut,
-               m.nom AS nom_menu,
-               u.nom,
-               u.prenom
+// Préparer la requête de récupération des commandes
+
+$sql = "SELECT c.*, m.nom AS nom_menu, u.nom, u.prenom
         FROM commandes c
-        INNER JOIN menus m ON c.menu_id = m.id
-        INNER JOIN utilisateurs u ON c.utilisateur_id = u.id
+        JOIN menus m ON m.id = c.menu_id
+        JOIN utilisateurs u ON u.id = c.utilisateur_id
         WHERE 1 = 1";
 
-$parametres = [];
+$params = [];
 
-// Filtrer par statut
-if ($filtreStatut !== '') {
-    $sql .= " AND c.statut = :statut";
-    $parametres['statut'] = $filtreStatut;
+// Appliquer le filtre par statut
+
+if ($statut !== '') {
+
+    $sql .= ' AND c.statut = ?';
+
+    $params[] = $statut;
 }
 
-// Filtrer par client
-if ($filtreClient !== '') {
-    $sql .= " AND (u.nom LIKE :nom OR u.prenom LIKE :prenom)";
+// Appliquer le filtre par client
 
-    $parametres['nom'] = '%' . $filtreClient . '%';
-    $parametres['prenom'] = '%' . $filtreClient . '%';
+if ($client !== '') {
+
+    $sql .= ' AND (u.nom LIKE ? OR u.prenom LIKE ?)';
+
+    $params[] = '%' . $client . '%';
+    $params[] = '%' . $client . '%';
 }
 
-$sql .= " ORDER BY c.date_creation DESC";
+// Trier les commandes de la plus récente à la plus ancienne
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute($parametres);
+$sql .= ' ORDER BY c.date_creation DESC, c.id DESC';
 
-$commandes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Exécuter la requête
+
+$s = $pdo->prepare($sql);
+$s->execute($params);
+
+$commandes = $s->fetchAll(PDO::FETCH_ASSOC);
+
+// Affichage de la page
+
+debutPage('Espace employé');
 
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espace employé - Vite & Gourmand</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
+<p>
+    Bienvenue <?= ech($u['prenom']) ?>.
+</p>
 
-<?php require_once __DIR__ . '/includes/header.php'; ?>
+<!-- Gestion du catalogue -->
 
-<main class="conteneur">
+<h2>Gestion du catalogue</h2>
 
-    <h1>Espace employé</h1>
+<?php
 
-    <p>Bienvenue <?= htmlspecialchars($_SESSION['prenom']) ?>.</p>
+$liensCatalogue = [
 
-    <h2>Gestion des commandes</h2>
+    'gestion-menus.php' => 'Gérer les menus',
+    'gestion-plats.php' => 'Gérer les plats',
+    'gestion-horaires.php' => 'Gérer les horaires',
+    'gestion-avis.php' => 'Gérer les avis'
 
-    <!-- Messages de confirmation -->
+];
 
-    <?php if (($_GET['statut'] ?? '') === 'ok'): ?>
+?>
+
+<?php foreach ($liensCatalogue as $url => $label): ?>
+
+    <a class="bouton-detail" href="<?= ech($url) ?>">
+        <?= ech($label) ?>
+    </a>
+
+<?php endforeach; ?>
+
+<!-- Gestion des commandes -->
+
+<h2>Gestion des commandes</h2>
+
+<?php
+
+// Définir les messages de confirmation
+
+$messages = [
+
+    'statut' => 'Statut modifié.',
+    'annulation' => 'Commande annulée.'
+
+];
+
+?>
+
+<!-- Afficher les messages de confirmation ou d'erreur -->
+
+<?php foreach ($messages as $k => $message): ?>
+
+    <?php if (($_GET[$k] ?? '') === 'ok'): ?>
 
         <p class="message-succes">
-            Le statut de la commande a bien été modifié.
+            <?= ech($message) ?>
         </p>
 
-    <?php elseif (($_GET['statut'] ?? '') === 'erreur'): ?>
+    <?php elseif (($_GET[$k] ?? '') === 'erreur'): ?>
 
         <p class="message-erreur">
-            Impossible de modifier le statut de la commande.
+            Opération impossible.
         </p>
 
     <?php endif; ?>
 
-    <?php if (($_GET['annulation'] ?? '') === 'ok'): ?>
+<?php endforeach; ?>
 
-        <p class="message-succes">
-            La commande a bien été annulée.
-        </p>
+<!-- Formulaire de filtrage des commandes -->
 
-    <?php elseif (($_GET['annulation'] ?? '') === 'erreur'): ?>
+<form method="get" class="filtres-commandes">
 
-        <p class="message-erreur">
-            Impossible d'annuler la commande.
-        </p>
+    <label for="statut">Statut</label>
 
-    <?php endif; ?>
+    <select id="statut" name="statut">
 
-    <!-- Formulaire de filtrage -->
+        <option value="">Tous les statuts</option>
 
-    <form method="GET"
-          action="espace-employe.php"
-          class="filtres-commandes">
+        <?php foreach ($labels as $k => $v): ?>
 
-        <label for="statut">Statut</label>
+            <option
+                value="<?= ech($k) ?>"
+                <?= $statut === $k ? 'selected' : '' ?>
+            >
+                <?= ech($v) ?>
+            </option>
 
-        <select name="statut" id="statut">
+        <?php endforeach; ?>
 
-            <option value="">Tous les statuts</option>
+    </select>
 
-            <?php foreach ($statutsAutorises as $statut): ?>
+    <label for="client">Client</label>
 
-                <option value="<?= htmlspecialchars($statut) ?>"
-                    <?= $filtreStatut === $statut ? 'selected' : '' ?>>
+    <input
+        id="client"
+        name="client"
+        value="<?= ech($client) ?>"
+    >
 
-                    <?= htmlspecialchars($libellesStatuts[$statut]) ?>
+    <button>
+        Filtrer
+    </button>
 
-                </option>
+    <a href="espace-employe.php">
+        Réinitialiser
+    </a>
 
-            <?php endforeach; ?>
+</form>
 
-        </select>
+<!-- Affichage des commandes -->
 
-        <label for="client">Client</label>
+<?php if (!$commandes): ?>
 
-        <input type="text"
-               name="client"
-               id="client"
-               placeholder="Nom ou prénom du client"
-               value="<?= htmlspecialchars($filtreClient) ?>">
+    <p>Aucune commande trouvée.</p>
 
-        <button type="submit">Filtrer</button>
+<?php else: ?>
 
-        <a href="espace-employe.php">Réinitialiser</a>
+    <div class="table-responsive">
 
-    </form>
+        <table class="table-commandes">
 
-    <!-- Liste des commandes -->
+            <thead>
 
-    <?php if (empty($commandes)): ?>
+                <tr>
 
-        <p>Aucune commande trouvée.</p>
+                    <?php
 
-    <?php else: ?>
+                    $colonnes = [
 
-        <div class="table-responsive">
+                        'N°',
+                        'Client',
+                        'Menu',
+                        'Personnes',
+                        'Date',
+                        'Heure',
+                        'Prix total',
+                        'Statut',
+                        'Actions'
 
-            <table class="table-commandes">
+                    ];
 
-                <thead>
-                    <tr>
-                        <th>N°</th>
-                        <th>Client</th>
-                        <th>Menu</th>
-                        <th>Personnes</th>
-                        <th>Date</th>
-                        <th>Heure</th>
-                        <th>Prix total</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
+                    ?>
 
-                <tbody>
+                    <?php foreach ($colonnes as $h): ?>
 
-                    <?php foreach ($commandes as $commande): ?>
-
-                        <tr>
-
-                            <td><?= (int) $commande['id'] ?></td>
-
-                            <td>
-                                <?= htmlspecialchars($commande['prenom'] . ' ' . $commande['nom']) ?>
-                            </td>
-
-                            <td>
-                                <?= htmlspecialchars($commande['nom_menu']) ?>
-                            </td>
-
-                            <td>
-                                <?= (int) $commande['nombre_personnes'] ?>
-                            </td>
-
-                            <td>
-                                <?= date('d/m/Y', strtotime($commande['date_prestation'])) ?>
-                            </td>
-
-                            <td>
-                                <?= htmlspecialchars(substr($commande['heure_livraison'] ?? '', 0, 5)) ?>
-                            </td>
-
-                            <td>
-                                <?= number_format((float) $commande['prix_total'], 2, ',', ' ') ?> €
-                            </td>
-
-                            <!-- Statut de la commande -->
-
-                            <td>
-                                <span class="statut statut-<?= htmlspecialchars($commande['statut']) ?>">
-
-                                    <?= htmlspecialchars($libellesStatuts[$commande['statut']] ?? $commande['statut']) ?>
-
-                                </span>
-                            </td>
-
-                            <!-- Actions disponibles -->
-
-                            <td>
-
-                                <?php if (isset($transitions[$commande['statut']])): ?>
-
-                                    <form method="POST" action="modifier-statut.php">
-
-                                        <input type="hidden"
-                                               name="csrf_token"
-                                               value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-
-                                        <input type="hidden"
-                                               name="commande_id"
-                                               value="<?= (int) $commande['id'] ?>">
-
-                                        <?php foreach ($transitions[$commande['statut']] as $statut): ?>
-
-                                            <button type="submit"
-                                                    name="nouveau_statut"
-                                                    value="<?= htmlspecialchars($statut) ?>">
-
-                                                <?= htmlspecialchars($libellesStatuts[$statut]) ?>
-
-                                            </button>
-
-                                        <?php endforeach; ?>
-
-                                    </form>
-
-                                <?php endif; ?>
-
-                                <?php if (in_array(
-                                    $commande['statut'],
-                                    ['en_attente', 'acceptee', 'en_preparation'],
-                                    true
-                                )): ?>
-
-                                    <a href="annuler-commande-employe.php?id=<?= (int) $commande['id'] ?>">
-                                        Annuler
-                                    </a>
-
-                                <?php endif; ?>
-
-                                <a href="historique-commande.php?id=<?= (int) $commande['id'] ?>">
-                                    Historique
-                                </a>
-
-                            </td>
-
-                        </tr>
+                        <th><?= ech($h) ?></th>
 
                     <?php endforeach; ?>
 
-                </tbody>
+                </tr>
 
-            </table>
+            </thead>
 
-        </div>
+            <tbody>
 
-    <?php endif; ?>
+                <?php foreach ($commandes as $c): ?>
 
-</main>
+                    <tr>
 
-</body>
-</html>
+                        <!-- Numéro de la commande -->
+
+                        <td>
+                            <?= (int) $c['id'] ?>
+                        </td>
+
+                        <!-- Nom et prénom du client -->
+
+                        <td>
+                            <?= ech($c['prenom'] . ' ' . $c['nom']) ?>
+                        </td>
+
+                        <!-- Menu commandé -->
+
+                        <td>
+                            <?= ech($c['nom_menu']) ?>
+                        </td>
+
+                        <!-- Nombre de personnes -->
+
+                        <td>
+                            <?= (int) $c['nombre_personnes'] ?>
+                        </td>
+
+                        <!-- Date de prestation -->
+
+                        <td>
+                            <?= ech($c['date_prestation']) ?>
+                        </td>
+
+                        <!-- Heure de livraison -->
+
+                        <td>
+                            <?= ech(substr(
+                                $c['heure_livraison'] ?? '',
+                                0,
+                                5
+                            )) ?>
+                        </td>
+
+                        <!-- Prix total -->
+
+                        <td>
+                            <?= number_format(
+                                (float) $c['prix_total'],
+                                2,
+                                ',',
+                                ' '
+                            ) ?> €
+                        </td>
+
+                        <!-- Statut actuel -->
+
+                        <td>
+
+                            <?php statut($c['statut']); ?>
+
+                        </td>
+
+                        <!-- Actions disponibles -->
+
+                        <td>
+
+                            <!-- Modification du statut -->
+
+                            <?php if (isset($transitions[$c['statut']])): ?>
+
+                                <form
+                                    method="post"
+                                    action="modifier-statut.php"
+                                >
+
+                                    <?php jeton(); ?>
+
+                                    <input
+                                        type="hidden"
+                                        name="commande_id"
+                                        value="<?= (int) $c['id'] ?>"
+                                    >
+
+                                    <?php foreach ($transitions[$c['statut']] as $next): ?>
+
+                                        <button
+                                            name="nouveau_statut"
+                                            value="<?= ech($next) ?>"
+                                        >
+                                            <?= ech($labels[$next]) ?>
+                                        </button>
+
+                                    <?php endforeach; ?>
+
+                                </form>
+
+                            <?php endif; ?>
+
+                            <!-- Modification et annulation de la commande -->
+
+                            <?php if (in_array(
+                                $c['statut'],
+                                [
+                                    'en_attente',
+                                    'acceptee',
+                                    'en_preparation'
+                                ],
+                                true
+                            )): ?>
+
+                                <a href="modifier-commande-employe.php?id=<?= (int) $c['id'] ?>">
+                                    Modifier
+                                </a>
+
+                                <a href="annuler-commande-employe.php?id=<?= (int) $c['id'] ?>">
+                                    Annuler
+                                </a>
+
+                            <?php endif; ?>
+
+                            <!-- Consultation du détail de la commande -->
+
+                            <a href="detail-commande-employe.php?id=<?= (int) $c['id'] ?>">
+                                Détail
+                            </a>
+
+                            <!-- Consultation de l'historique -->
+
+                            <a href="historique-commande.php?id=<?= (int) $c['id'] ?>">
+                                Historique
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                <?php endforeach; ?>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+<?php endif; ?>
+
+<?php
+
+// Afficher la fin de la page
+
+finPage();

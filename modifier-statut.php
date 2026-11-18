@@ -3,11 +3,12 @@
 session_start();
 
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/envoyer-mail.php';
 
 // Vérifier les droits d'accès
 if (
     !isset($_SESSION['utilisateur_id']) ||
-    ($_SESSION['role'] ?? '') !== 'employe'
+    !in_array($_SESSION['role'] ?? '', ['employe', 'admin'], true)
 ) {
     http_response_code(403);
     exit('Accès refusé.');
@@ -16,7 +17,7 @@ if (
 // Vérifier que le compte employé est toujours actif
 $stmt = $pdo->prepare(
     "SELECT id FROM utilisateurs
-     WHERE id = :id AND role = 'employe' AND actif = 1"
+     WHERE id = :id AND role IN ('employe', 'admin') AND actif = 1"
 );
 
 $stmt->execute([
@@ -72,8 +73,10 @@ try {
 
     // Récupérer le statut actuel
     $stmt = $pdo->prepare(
-        "SELECT statut FROM commandes
-         WHERE id = :id
+        "SELECT c.statut, u.email, u.prenom
+         FROM commandes c
+         JOIN utilisateurs u ON u.id = c.utilisateur_id
+         WHERE c.id = :id
          FOR UPDATE"
     );
 
@@ -123,6 +126,20 @@ try {
     ]);
 
     $pdo->commit();
+
+    // Envoyer la notification uniquement lors du passage à ce statut
+    if ($nouveauStatut === 'en_attente_retour_materiel') {
+
+        $message = "Bonjour " . $commande['prenom'] . ",\n\n"
+            . "Le matériel de la commande n°$commandeId doit être restitué "
+            . "dans un délai de 10 jours ouvrés.\n"
+            . "À défaut, une pénalité de 600 € sera appliquée.\n"
+            . "Contactez-nous pour organiser la restitution : "
+            . "viteetgourmand.ecf@gmail.com.\n\n"
+            . "L’équipe Vite & Gourmand";
+
+        envoyerMail($commande['email'], 'Retour du matériel', $message);
+    }
 
     header('Location: espace-employe.php?statut=ok');
     exit;

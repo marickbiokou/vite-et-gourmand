@@ -1,12 +1,25 @@
 
 <?php
 
+session_start();
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/envoyer-mail.php';
 
 $erreur = '';
 $succes = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    if (!is_string($_POST['csrf_token'] ?? null) ||
+        !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        http_response_code(403);
+        exit('Formulaire invalide.');
+    }
 
     $nom = trim($_POST['nom'] ?? '');
     $prenom = trim($_POST['prenom'] ?? '');
@@ -39,7 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $erreur = 'Adresse email invalide.';
 
     } elseif (
+        !is_string($motDePasse) ||
         strlen($motDePasse) < 10 ||
+        strlen($motDePasse) > 72 ||
         !preg_match('/[A-Z]/', $motDePasse) ||
         !preg_match('/[a-z]/', $motDePasse) ||
         !preg_match('/[0-9]/', $motDePasse) ||
@@ -85,6 +100,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             $succes = 'Votre compte a été créé avec succès.';
+
+            // Envoyer le message de bienvenue après la création du compte
+            $message = "Bonjour $prenom,\n\n"
+                . "Bienvenue chez Vite & Gourmand !\n"
+                . "Votre compte client est créé.\n\n"
+                . "L’équipe Vite & Gourmand";
+
+            if (!envoyerMail($email, 'Bienvenue chez Vite & Gourmand', $message)) {
+                $succes .= ' L’e-mail de bienvenue n’a pas pu être envoyé.';
+            }
         }
     }
 }
@@ -120,6 +145,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form action="inscription.php" method="POST"
           class="formulaire">
+
+        <input type="hidden" name="csrf_token"
+               value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
 
         <label for="nom">Nom</label>
         <input type="text" id="nom" name="nom"

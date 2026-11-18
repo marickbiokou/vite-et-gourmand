@@ -8,7 +8,7 @@ require_once __DIR__ . '/config/database.php';
 // Vérifier les droits d'accès
 if (
     !isset($_SESSION['utilisateur_id']) ||
-    ($_SESSION['role'] ?? '') !== 'employe'
+    !in_array($_SESSION['role'] ?? '', ['employe', 'admin'], true)
 ) {
     http_response_code(403);
     exit('Accès refusé.');
@@ -17,7 +17,7 @@ if (
 // Vérifier que le compte est toujours actif
 $stmt = $pdo->prepare(
     "SELECT id FROM utilisateurs
-     WHERE id = :id AND role = 'employe' AND actif = 1"
+     WHERE id = :id AND role IN ('employe', 'admin') AND actif = 1"
 );
 
 $stmt->execute(['id' => $_SESSION['utilisateur_id']]);

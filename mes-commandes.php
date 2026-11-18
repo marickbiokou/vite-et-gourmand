@@ -1,196 +1,167 @@
+<?php
+
+require_once __DIR__ . '/includes/espace-commun.php';
+
+// Vérifier les droits d'accès du client
+
+$u = compteActif(['client']);
+
+// Récupérer les commandes du client connecté
+
+$sql = "SELECT c.*, m.nom AS nom_menu
+        FROM commandes c
+        JOIN menus m ON m.id = c.menu_id
+        WHERE c.utilisateur_id = ?
+        ORDER BY c.date_creation DESC, c.id DESC";
+
+$s = $pdo->prepare($sql);
+$s->execute([$u['id']]);
+
+$commandes = $s->fetchAll(PDO::FETCH_ASSOC);
+
+// Affichage de la page
+
+debutPage('Mes commandes');
+
+?>
+
+<a class="lien-retour" href="mon-profil.php">
+    Mon profil
+</a>
 
 <?php
 
-session_start();
+// Définir les messages de confirmation
 
-// Créer un jeton CSRF pour sécuriser les actions du client
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+$messages = [
 
-require_once __DIR__ . '/config/database.php';
+    'annulation' => 'annulée',
+    'modification' => 'modifiée'
 
-// Vérifier que le client est connecté
-if (!isset($_SESSION['utilisateur_id'])) {
-    header('Location: connexion.php');
-    exit;
-}
-
-// Vérifier le rôle de l'utilisateur
-if (($_SESSION['role'] ?? '') !== 'client') {
-    http_response_code(403);
-    exit('Accès refusé.');
-}
-
-// Récupérer les commandes du client connecté
-$sql = "SELECT
-            c.id,
-            c.nombre_personnes,
-            c.date_prestation,
-            c.prix_total,
-            c.statut,
-            m.nom AS nom_menu
-        FROM commandes c
-        INNER JOIN menus m ON c.menu_id = m.id
-        WHERE c.utilisateur_id = :utilisateur_id
-        ORDER BY c.date_creation DESC, c.id DESC";
-
-$stmt = $pdo->prepare($sql);
-
-$stmt->execute([
-    'utilisateur_id' => $_SESSION['utilisateur_id']
-]);
-
-$commandes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Définir les libellés des statuts
-$libellesStatuts = [
-    'en_attente' => 'En attente',
-    'acceptee' => 'Acceptée',
-    'en_preparation' => 'En préparation',
-    'en_livraison' => 'En cours de livraison',
-    'livree' => 'Livrée',
-    'en_attente_retour_materiel' => 'En attente du retour du matériel',
-    'terminee' => 'Terminée',
-    'annulee' => 'Annulée'
 ];
 
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes commandes - Vite & Gourmand</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
+<!-- Affichage des messages de confirmation ou d'erreur -->
 
-<?php require_once __DIR__ . '/includes/header.php'; ?>
+<?php foreach ($messages as $k => $v): ?>
 
-<main class="conteneur">
-
-    <h1>Mes commandes</h1>
-
-    <p>Retrouvez vos commandes et suivez leur état d'avancement.</p>
-
-    <!-- Messages de confirmation -->
-
-    <?php if (($_GET['annulation'] ?? '') === 'ok'): ?>
+    <?php if (($_GET[$k] ?? '') === 'ok'): ?>
 
         <p class="message-succes">
-            Votre commande a bien été annulée.
+            La commande a bien été <?= ech($v) ?>.
         </p>
 
-    <?php elseif (($_GET['annulation'] ?? '') === 'erreur'): ?>
+    <?php elseif (($_GET[$k] ?? '') === 'erreur'): ?>
 
         <p class="message-erreur">
-            Annulation impossible.
+            Impossible de traiter la commande.
         </p>
 
     <?php endif; ?>
 
-    <?php if (($_GET['modification'] ?? '') === 'ok'): ?>
+<?php endforeach; ?>
 
-        <p class="message-succes">
-            Votre commande a bien été modifiée.
+<!-- Vérifier si le client possède des commandes -->
+
+<?php if (!$commandes): ?>
+
+    <p>Aucune commande enregistrée.</p>
+
+    <a href="menus.php" class="bouton-detail">
+        Découvrir nos menus
+    </a>
+
+<?php endif; ?>
+
+<!-- Affichage des commandes du client -->
+
+<?php foreach ($commandes as $c): ?>
+
+    <article class="carte-menu">
+
+        <h2>
+            Commande n°<?= (int) $c['id'] ?>
+        </h2>
+
+        <!-- Informations du menu -->
+
+        <p>
+            <?= ech($c['nom_menu']) ?>
+            — <?= (int) $c['nombre_personnes'] ?> personnes
         </p>
 
-    <?php endif; ?>
+        <!-- Date de prestation -->
 
-    <!-- Liste des commandes -->
+        <p>
+            <?= ech($c['date_prestation']) ?>
+        </p>
 
-    <?php if (empty($commandes)): ?>
+        <!-- Prix total de la commande -->
 
-        <div class="carte-menu">
+        <p class="prix">
+            <?= number_format(
+                (float) $c['prix_total'],
+                2,
+                ',',
+                ' '
+            ) ?> €
+        </p>
 
-            <p>Vous n'avez pas encore passé de commande.</p>
+        <!-- Statut actuel de la commande -->
 
-            <a href="menus.php" class="bouton-detail">
-                Découvrir nos menus
+        <p>
+            <?php statut($c['statut']); ?>
+        </p>
+
+        <!-- Consultation du détail de la commande -->
+
+        <a
+            class="bouton-detail"
+            href="detail-commande.php?id=<?= (int) $c['id'] ?>"
+        >
+            Voir le détail
+        </a>
+
+        <!-- Modification et annulation avant acceptation -->
+
+        <?php if ($c['statut'] === 'en_attente'): ?>
+
+            <a
+                class="bouton-detail"
+                href="modifier-commande.php?id=<?= (int) $c['id'] ?>"
+            >
+                Modifier
             </a>
 
-        </div>
+            <form
+                method="post"
+                action="annuler-commande.php"
+                onsubmit="return confirm('Annuler cette commande ?')"
+            >
 
-    <?php else: ?>
+                <?php jeton(); ?>
 
-        <?php foreach ($commandes as $commande): ?>
+                <input
+                    type="hidden"
+                    name="commande_id"
+                    value="<?= (int) $c['id'] ?>"
+                >
 
-            <article class="carte-menu">
+                <button>
+                    Annuler
+                </button>
 
-                <h2>
-                    Commande n°<?= (int) $commande['id'] ?>
-                </h2>
+            </form>
 
-                <p>
-                    <strong>Menu :</strong>
-                    <?= htmlspecialchars($commande['nom_menu']) ?>
-                </p>
+        <?php endif; ?>
 
-                <p>
-                    <strong>Personnes :</strong>
-                    <?= (int) $commande['nombre_personnes'] ?>
-                </p>
+    </article>
 
-                <p>
-                    <strong>Date de prestation :</strong>
-                    <?= date('d/m/Y', strtotime($commande['date_prestation'])) ?>
-                </p>
+<?php endforeach; ?>
 
-                <p>
-                    <strong>Statut :</strong>
+<?php
 
-                    <span class="statut statut-<?= htmlspecialchars($commande['statut']) ?>">
+// Afficher la fin de la page
 
-                        <?= htmlspecialchars($libellesStatuts[$commande['statut']] ?? $commande['statut']) ?>
-
-                    </span>
-                </p>
-
-                <p class="prix">
-                    Prix total :
-                    <?= number_format((float) $commande['prix_total'], 2, ',', ' ') ?> €
-                </p>
-
-                <!-- Actions autorisées avant acceptation -->
-
-                <?php if ($commande['statut'] === 'en_attente'): ?>
-
-                    <p>
-                        <a class="bouton-detail"
-                           href="modifier-commande.php?id=<?= (int) $commande['id'] ?>">
-
-                            Modifier ma commande
-
-                        </a>
-                    </p>
-
-                    <form action="annuler-commande.php" method="POST">
-
-                        <input type="hidden"
-                               name="commande_id"
-                               value="<?= (int) $commande['id'] ?>">
-
-                        <input type="hidden"
-                               name="csrf_token"
-                               value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-
-                        <button type="submit">
-                            Annuler ma commande
-                        </button>
-
-                    </form>
-
-                <?php endif; ?>
-
-            </article>
-
-        <?php endforeach; ?>
-
-    <?php endif; ?>
-
-</main>
-
-</body>
-</html>
+finPage();
