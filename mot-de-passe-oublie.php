@@ -69,7 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Construire le lien de réinitialisation
 
-            $url = 'http://localhost/vite-et-gourmand';
+            // Adaptation de l'adresse selon l'environnement
+            if (($_SERVER['SERVER_NAME'] ?? '') === 'vgourmand2026.alwaysdata.net') {
+                $url = 'https://vgourmand2026.alwaysdata.net';
+            } else {
+                $url = 'http://localhost/vite-et-gourmand';
+            }
 
             $lien = $url . '/reinitialiser-mot-de-passe.php?token=' . $token;
 

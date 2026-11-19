@@ -8,3 +8,5 @@
 
 /config/mail.php
 /vendor/
+
+!/database/vite_et_gourmand_demo.sql
