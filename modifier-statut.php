@@ -6,6 +6,7 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/envoyer-mail.php';
 
 // Vérifier les droits d'accès
+
 if (
     !isset($_SESSION['utilisateur_id']) ||
     !in_array($_SESSION['role'] ?? '', ['employe', 'admin'], true)
@@ -14,7 +15,8 @@ if (
     exit('Accès refusé.');
 }
 
-// Vérifier que le compte employé est toujours actif
+// Vérifier que le compte est toujours actif
+
 $stmt = $pdo->prepare(
     "SELECT id FROM utilisateurs
      WHERE id = :id AND role IN ('employe', 'admin') AND actif = 1"
@@ -30,6 +32,7 @@ if (!$stmt->fetch()) {
 }
 
 // Vérifier la méthode POST et le jeton CSRF
+
 if (
     $_SERVER['REQUEST_METHOD'] !== 'POST' ||
     empty($_SESSION['csrf_token']) ||
@@ -44,6 +47,7 @@ if (
 }
 
 // Vérifier l'identifiant de la commande
+
 $commandeId = filter_input(
     INPUT_POST,
     'commande_id',
@@ -55,23 +59,29 @@ if (!$commandeId || $commandeId < 1) {
 }
 
 // Définir les transitions autorisées
+
 $transitions = [
+
     'en_attente' => ['acceptee'],
     'acceptee' => ['en_preparation'],
     'en_preparation' => ['en_livraison'],
     'en_livraison' => ['livree'],
+
     'livree' => [
         'terminee',
         'en_attente_retour_materiel'
     ],
+
     'en_attente_retour_materiel' => ['terminee']
+
 ];
 
 try {
 
     $pdo->beginTransaction();
 
-    // Récupérer le statut actuel
+    // Récupérer le statut actuel et les informations du client
+
     $stmt = $pdo->prepare(
         "SELECT c.statut, u.email, u.prenom
          FROM commandes c
@@ -85,9 +95,11 @@ try {
     $commande = $stmt->fetch();
 
     // Récupérer le statut choisi par l'employé
+
     $nouveauStatut = $_POST['nouveau_statut'] ?? '';
 
     // Vérifier que la transition est autorisée
+
     if (
         !$commande ||
         !is_string($nouveauStatut) ||
@@ -102,6 +114,7 @@ try {
     }
 
     // Modifier le statut de la commande
+
     $stmt = $pdo->prepare(
         "UPDATE commandes
          SET statut = :statut
@@ -114,6 +127,7 @@ try {
     ]);
 
     // Enregistrer le changement dans l'historique
+
     $stmt = $pdo->prepare(
         "INSERT INTO historique_statuts
          (commande_id, statut, date_modification)
@@ -125,9 +139,12 @@ try {
         'statut' => $nouveauStatut
     ]);
 
+    // Valider la transaction
+
     $pdo->commit();
 
-    // Envoyer la notification uniquement lors du passage à ce statut
+    // Envoyer un e-mail concernant le retour du matériel
+
     if ($nouveauStatut === 'en_attente_retour_materiel') {
 
         $message = "Bonjour " . $commande['prenom'] . ",\n\n"
@@ -138,15 +155,48 @@ try {
             . "viteetgourmand.ecf@gmail.com.\n\n"
             . "L’équipe Vite & Gourmand";
 
-        envoyerMail($commande['email'], 'Retour du matériel', $message);
+        envoyerMail(
+            $commande['email'],
+            'Retour du matériel',
+            $message
+        );
     }
+
+    // Inviter le client à déposer un avis
+
+    if ($nouveauStatut === 'terminee') {
+
+        $sujet = 'Votre avis compte pour Vite & Gourmand !';
+
+        $message = "Bonjour " . $commande['prenom'] . ",\n\n"
+            . "Votre commande n°$commandeId est désormais terminée.\n\n"
+            . "Nous vous remercions d'avoir fait confiance à Vite & Gourmand.\n\n"
+            . "Nous vous invitons à partager votre expérience "
+            . "en déposant un avis depuis votre espace client.\n\n"
+            . "Pour cela, connectez-vous à votre compte, "
+            . "accédez à Mes commandes, consultez le détail "
+            . "de votre commande et cliquez sur Donner mon avis.\n\n"
+            . "Merci pour votre confiance et à bientôt !\n\n"
+            . "L’équipe Vite & Gourmand";
+
+        envoyerMail(
+            $commande['email'],
+            $sujet,
+            $message
+        );
+    }
+
+    // Rediriger vers l'espace employé
 
     header('Location: espace-employe.php?statut=ok');
     exit;
 
 } catch (Exception $e) {
 
+    // Annuler la transaction en cas d'erreur
+
     if ($pdo->inTransaction()) {
+
         $pdo->rollBack();
     }
 

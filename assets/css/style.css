@@ -551,3 +551,24 @@ footer.pied-page {
     font-size: 26px;
   }
 }
+
+/* Liens utiles du pied de page */
+
+.liste-liens-footer {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.liste-liens-footer li {
+  margin-bottom: 8px;
+}
+
+.liste-liens-footer a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.liste-liens-footer a:hover {
+  text-decoration: none;
+}

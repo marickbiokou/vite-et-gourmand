@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/database.php';
 
 // Récupération des horaires d'ouverture
+
 $stmt = $pdo->query("
     SELECT *
     FROM horaires
@@ -75,6 +76,42 @@ $horaires = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </ul>
 
             <?php endif; ?>
+
+        </section>
+
+        <!-- Informations légales et liens utiles -->
+
+        <section>
+
+            <h2>Informations utiles</h2>
+
+            <ul class="liste-liens-footer">
+
+                <li>
+                    <a href="mentions-legales.php">
+                        Mentions légales
+                    </a>
+                </li>
+
+                <li>
+                    <a href="cgv.php">
+                        Conditions générales de vente
+                    </a>
+                </li>
+
+                <li>
+                    <a href="politique-confidentialite.php">
+                        Politique de confidentialité
+                    </a>
+                </li>
+
+                <li>
+                    <a href="contact.php">
+                        Nous contacter
+                    </a>
+                </li>
+
+            </ul>
 
         </section>
 
